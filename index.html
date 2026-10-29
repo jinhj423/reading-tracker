@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>독서 체크리스트</title>
+<meta name="theme-color" content="#14120f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#14120f; --card:#1d1a16; --card2:#25211c; --line:#332d26;
+  --text:#efe8dc; --dim:#a39a8c; --faint:#6f675c;
+  --amber:#e3a94b; --amber-d:#e3a94b22; --green:#7fbf8e; --green-d:#7fbf8e22; --red:#d9776a;
+  --s1:#e3a94b; --s2:#8fb5d9; --s3:#b79be0; --s4:#7fbf8e;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  font-size:15px;line-height:1.5}
+body{padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 24px}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:-.02em}
+h2{font-size:13px;color:var(--dim);font-weight:600;margin:22px 0 10px;letter-spacing:.02em}
+.sub{color:var(--dim);font-size:13px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--card2);color:var(--dim);white-space:nowrap}
+.pill.amber{background:var(--amber-d);color:var(--amber)}
+.pill.green{background:var(--green-d);color:var(--green)}
+.btn{appearance:none;white-space:nowrap;flex:none;border:1px solid var(--line);background:var(--card2);color:var(--text);
+  border-radius:10px;padding:9px 13px;font:inherit;font-size:14px;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--amber);color:#1a1408;border-color:var(--amber);font-weight:700}
+.btn.ghost{background:transparent}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.block{width:100%}
+input[type=number],input[type=text],input[type=password],textarea,select{
+  background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:9px;
+  padding:8px 10px;font:inherit;font-size:15px;width:100%}
+textarea{resize:vertical;min-height:44px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--amber);outline-offset:-1px}
+.bar{height:6px;background:var(--card2);border-radius:99px;overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--amber);border-radius:99px;transition:width .3s}
+.bar.green>i{background:var(--green)}
+.title{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.author{color:var(--faint);font-size:12px}
+.tip{font-size:13px;color:var(--dim);margin-top:6px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:14px}
+.check input{width:20px;height:20px;accent-color:var(--amber);margin:1px 0 0;flex:none}
+.check.done span{color:var(--faint);text-decoration:line-through}
+.hero{background:linear-gradient(135deg,#2a2218,#1d1a16);border:1px solid #4a3a22;border-radius:18px;padding:16px;margin:14px 0 6px}
+.big{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:#00000033;border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:18px}
+.stat small{color:var(--dim);font-size:11px}
+.week{display:flex;gap:5px;margin-top:12px}
+.week div{flex:1;text-align:center;font-size:10px;color:var(--faint)}
+.week i{display:block;height:22px;border-radius:6px;background:var(--card2);margin-bottom:3px}
+.week i.on{background:var(--amber)}
+.week i.today{outline:1.5px solid var(--amber);outline-offset:1px}
+.stage-h{display:flex;align-items:center;gap:8px;margin:24px 0 10px}
+.stage-h .dot{width:9px;height:9px;border-radius:50%}
+.stage-h b{font-size:15px}
+.stage-h span{color:var(--dim);font-size:12px}
+.bookhead{display:flex;justify-content:space-between;gap:10px;cursor:pointer}
+.bookhead .l{min-width:0}
+.detail{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;display:none}
+.card.open .detail{display:block}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:transparent;color:var(--dim);font:inherit;font-size:13px;padding:6px 4px;border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--card2);color:var(--text);font-weight:700}
+.lbl{font-size:12px;color:var(--dim);margin:12px 0 5px}
+.quick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.nav{position:fixed;left:0;right:0;bottom:0;background:#14120fee;backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:10}
+.nav .in{display:flex;max-width:560px;width:100%}
+.nav a{flex:1;text-align:center;color:var(--faint);text-decoration:none;font-size:11px;padding:4px 0}
+.nav a .ic{display:block;font-size:20px;line-height:1.3;filter:grayscale(1);opacity:.6}
+.nav a.on{color:var(--amber)}
+.nav a.on .ic{filter:none;opacity:1}
+.banner{background:var(--amber-d);border:1px solid #e3a94b55;color:var(--amber);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:12px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-all;
+  background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text)}
+.widgetprev{background:#000;border-radius:22px;padding:16px 18px;font-size:14px;line-height:1.6;white-space:pre-wrap;border:1px solid #2a2a2a}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#f3ead9;color:#1a1408;
+  padding:9px 16px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;justify-content:center;z-index:20}
+.modal.on{display:flex}
+.sheet{background:var(--card);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:100%;max-width:560px}
+.syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--faint);margin-right:5px;vertical-align:1px}
+.syncdot.ok{background:var(--green)} .syncdot.err{background:var(--red)} .syncdot.busy{background:var(--amber)}
+.hide{display:none!important}
+.note-item{border-left:3px solid var(--amber);padding:2px 0 2px 10px;margin:6px 0;font-size:14px}
+.empty{color:var(--faint);font-size:13px;text-align:center;padding:18px 0}
+a.link{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<nav class="nav"><div class="in">
+  <a href="#today" data-v="today"><span class="ic">📖</span>오늘</a>
+  <a href="#shelf" data-v="shelf"><span class="ic">📚</span>책장</a>
+  <a href="#notes" data-v="notes"><span class="ic">📝</span>메모</a>
+  <a href="#settings" data-v="settings"><span class="ic">⚙️</span>설정</a>
+</div></nav>
+
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* =========================================================
+   독서 체크리스트 — 단일 파일 PWA
+   데이터: localStorage (+ 선택: GitHub data 브랜치 동기화 → KWGT 위젯)
+   ========================================================= */
+
+const STAGES = [
+  {n:1, name:'매매 규율 + 매크로 기초', desc:'가장 먼저 · 시험공부와 병행', color:'var(--s1)'},
+  {n:2, name:'투자 철학', desc:'정독 구간', color:'var(--s2)'},
+  {n:3, name:'원칙 · 기법', desc:'발췌독 · 필요할 때 찾아보기', color:'var(--s3)'},
+  {n:4, name:'틈새 읽기', desc:'출퇴근 · 자기 전', color:'var(--s4)'},
+];
+
+// role: heavy(무거운 핵심) / light(가벼운 병행) / daily(매일 조금씩) / ref(발췌·참고)
+// unit: page(쪽수) / q(문항) / task(하위 항목만)
+// note: rules(내 매매 규칙에 추가할 것 3개) / action(실천할 것 1개)
+const BOOKS = [
+  {id:'douglas', title:'심리투자 불변의 법칙', short:'심리투자', author:'마크 더글라스', stage:1, role:'heavy', unit:'page', note:'rules',
+   tip:'레버리지 단기매매의 손절 기준, 과정과 결과를 나누는 복기 습관과 바로 연결돼요. 1순위.'},
+  {id:'q300', title:'경제기사 궁금증 300문 300답', short:'300문', author:'곽해선', stage:1, role:'daily', unit:'q', total:300, note:'rules',
+   tip:'하루 몇 문항씩. 읽은 날은 경제기사 하나를 방금 배운 개념으로 해석해 보세요. 투운사 투자분석(거시경제)과도 겹쳐요.',
+   tasks:['금리','환율','물가','채권']},
+  {id:'housel', title:'돈의 심리학', short:'돈의 심리학', author:'모건 하우절', stage:2, role:'light', unit:'page', note:'rules',
+   tip:'가볍게 읽혀요. 하워드 막스 전에 워밍업으로.'},
+  {id:'marks', title:'하워드 막스 투자와 마켓사이클의 법칙', short:'마켓사이클', author:'하워드 막스', stage:2, role:'heavy', unit:'page', note:'rules',
+   tip:'매크로 맥락을 보는 핵심서. 300문 300답의 금리·채권 파트를 끝내고 읽으면 금리와 신용 사이클 이야기가 훨씬 잘 들어와요.'},
+  {id:'dalio', title:'원칙 (PRINCIPLES)', short:'원칙', author:'레이 달리오', stage:3, role:'ref', unit:'task', note:'rules',
+   tip:'다 읽을 필요 없어요. 1부만 읽고, 2부는 AI 컴퍼니 사규 설계용 참고서로.',
+   tasks:['1부 · 삶의 원칙','2부 · 일의 원칙 — AI 컴퍼니 사규·워크플로우 설계 참고']},
+  {id:'bollinger', title:'볼린저 밴드 투자기법', short:'볼린저', author:'존 볼린저', stage:3, role:'ref', unit:'task', note:'rules',
+   tip:'정독 말고 필요한 장만. 지금 RSI에 볼린저를 얹어 쓰고 있어서 바로 연결돼요.',
+   tasks:['%b','밴드폭(BandWidth)','다른 지표와 조합하는 법','읽은 내용 Pine Script로 검증']},
+  {id:'harmonic', title:'하모닉 이론', short:'하모닉', author:'하모린', stage:3, role:'ref', unit:'task', note:'rules',
+   tip:'우선순위 가장 낮음. 백테스트로 확인되기 전에는 실전에 쓰지 않기.',
+   tasks:['피보나치 채널 작도와 겹치는 부분','패턴 하나 골라 Pine Script 백테스트']},
+  {id:'reverser', title:'역행자', short:'역행자', author:'자청', stage:4, role:'light', unit:'page', note:'action', tip:'틈새 읽기 1번.'},
+  {id:'income', title:'소득혁명', short:'소득혁명', author:'브라이언 페이지', stage:4, role:'light', unit:'page', note:'action', tip:'틈새 읽기 2번.'},
+  {id:'doubleclick', title:'더블 클릭', short:'더블 클릭', author:'알간지', stage:4, role:'light', unit:'page', note:'action', tip:'틈새 읽기 3번.'},
+  {id:'caveman', title:'완벽한 원시인', short:'원시인', author:'자청', stage:4, role:'light', unit:'page', note:'action',
+   tip:'역행자와 같은 저자라 메시지가 겹쳐요. 훑어보기만 해도 충분.'},
+  {id:'dark', title:'다크 심리학', short:'다크 심리학', author:'다크 사이드 프로젝트', stage:4, role:'light', unit:'page', note:'action',
+   tip:'투자와 직접 관련이 적어 맨 뒤로.'},
+];
+const ROLE = {heavy:'핵심 정독', light:'가볍게', daily:'매일 조금씩', ref:'발췌독'};
+const STATUS = {todo:'대기', reading:'읽는 중', done:'완독', skip:'건너뜀'};
+
+/* ---------- storage ---------- */
+const KEY = 'reading-tracker-v1';
+const today = () => ymd(new Date());
+function ymd(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
+function defaultState(){
+  const books = {};
+  BOOKS.forEach(b=>books[b.id]={status:'todo',cur:0,total:b.total||null,tasks:{},notes:['','',''],startedAt:null,doneAt:null});
+  books.douglas.status='reading'; books.q300.status='reading';
+  books.douglas.startedAt = books.q300.startedAt = today();
+  return {v:1, books, log:{}, settings:{examMode:true, dailyMin:30, qPerDay:10,
+    sync:{owner:'jinhj423',repo:'reading-tracker',branch:'data',token:'',backup:false}}, updatedAt:Date.now()};
+}
+let S;
+function load(){
+  try{ S = JSON.parse(localStorage.getItem(KEY)) }catch(e){ S = null }
+  if(!S || !S.books) S = defaultState();
+  // 새 책이 추가된 경우 보정
+  BOOKS.forEach(b=>{ if(!S.books[b.id]) S.books[b.id]={status:'todo',cur:0,total:b.total||null,tasks:{},notes:['','',''],startedAt:null,doneAt:null} });
+}
+function save(silent){
+  S.updatedAt = Date.now();
+  try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
+  scheduleSync();
+  if(!silent) render();
+}
+
+/* ---------- derived ---------- */
+const B = id => BOOKS.find(b=>b.id===id);
+function pct(b){
+  const s=S.books[b.id];
+  if(s.status==='done') return 100;
+  if(b.unit==='task'){ const n=(b.tasks||[]).length; return n? Math.round(100*Object.values(s.tasks).filter(Boolean).length/n):0 }
+  if(!s.total) return 0;
+  return Math.min(100, Math.round(100*s.cur/s.total));
+}
+function streak(){
+  let d=new Date(), n=0;
+  if(!S.log[ymd(d)]) d.setDate(d.getDate()-1);         // 오늘 아직이면 어제부터 셈
+  while(S.log[ymd(d)]){ n++; d.setDate(d.getDate()-1) }
+  return n;
+}
+function reading(){ return BOOKS.filter(b=>S.books[b.id].status==='reading') }
+function nextUp(){
+  const maxStage = S.settings.examMode ? 1 : 4;
+  return BOOKS.find(b=>S.books[b.id].status==='todo' && b.stage<=maxStage) || null;
+}
+function counts(){
+  const active = BOOKS.filter(b=>S.books[b.id].status!=='skip');
+  return {done:active.filter(b=>S.books[b.id].status==='done').length, n:active.length};
+}
+function totalMin(){ return Object.values(S.log).reduce((a,l)=>a+(l.min||0),0) }
+function markRead(min){
+  const t=today(); const l=S.log[t]||{min:0};
+  l.min = (l.min||0) + (min||0); S.log[t]=l;
+}
+
+/* ---------- widget text (KWGT가 읽는 내용) ---------- */
+function widgetText(){
+  // 위젯 텍스트는 앱을 연 시점에만 갱신되므로 '오늘' 대신 마지막 기록 날짜를 보여줌
+  const lines=[];
+  const days=Object.keys(S.log).sort(); const last=days[days.length-1];
+  const lastTxt = last ? (last===today()?'오늘 ✓':`마지막 ${+last.slice(5,7)}/${+last.slice(8,10)}`) : '기록 없음';
+  lines.push(`🔥 ${streak()}일 연속 · ${lastTxt}`);
+  const r = reading();
+  r.slice(0,3).forEach(b=>{
+    const s=S.books[b.id];
+    if(b.unit==='q'){
+      const a=s.cur+1, z=Math.min(b.total, s.cur+S.settings.qPerDay);
+      lines.push(s.cur>=b.total ? `📰 ${b.short} 완료` : `📰 ${b.short} Q${a}–${z} (${s.cur}/${b.total})`);
+    }else if(b.unit==='task'){
+      const left=(b.tasks||[]).find((x,i)=>!s.tasks[i]);
+      lines.push(`🔖 ${b.short} ${pct(b)}%${left?' → '+left.split(' — ')[0]:''}`);
+    }else{
+      lines.push(`📖 ${b.short} ${s.total? pct(b)+'% (p.'+s.cur+')' : 'p.'+s.cur}`);
+    }
+  });
+  if(!r.length){ const n=nextUp(); lines.push(n?`다음 책: ${n.title}`:'다음 책을 골라주세요'); }
+  const c=counts();
+  lines.push(`✅ ${c.done}/${c.n}권${S.settings.examMode?' · 시험 모드':''}`);
+  return lines.join('\n');
+}
+
+/* ---------- UI helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),1800) }
+function sheet(html){ $('#sheet').innerHTML=html; $('#modal').classList.add('on') }
+function closeSheet(){ $('#modal').classList.remove('on') }
+$('#modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeSheet() });
+async function copy(text){
+  try{ await navigator.clipboard.writeText(text); toast('복사했어요') }
+  catch(e){ sheet(`<div class="title">아래 내용을 길게 눌러 복사하세요</div><textarea style="height:200px;margin-top:10px" readonly>${esc(text)}</textarea><button class="btn block" style="margin-top:10px" onclick="closeSheet()">닫기</button>`) }
+}
+const open = new Set();
+
+/* ---------- views ---------- */
+let view = 'today';
+function route(){
+  const h = (location.hash||'').slice(1);
+  view = ['today','shelf','notes','settings'].includes(h)? h : 'today';
+  render();
+}
+window.addEventListener('hashchange', route);
+
+function render(){
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===view));
+  const app=$('#app');
+  app.innerHTML = ({today:vToday, shelf:vShelf, notes:vNotes, settings:vSettings})[view]();
+}
+
+function progressBlock(b, compact){
+  const s=S.books[b.id];
+  if(b.unit==='task') return `<div class="bar"><i style="width:${pct(b)}%"></i></div>`;
+  if(b.unit==='q'){
+    return `<div class="row between" style="margin-top:8px"><span class="sub">Q${s.cur} / ${b.total}</span><span class="sub">${pct(b)}%</span></div>
+      <div class="bar"><i style="width:${pct(b)}%"></i></div>
+      <div class="quick">
+        <button class="btn sm primary" onclick="addQ('${b.id}',${S.settings.qPerDay})">+${S.settings.qPerDay}문항 읽음</button>
+        <button class="btn sm" onclick="addQ('${b.id}',5)">+5</button>
+        <button class="btn sm ghost" onclick="addQ('${b.id}',-1)">−1</button>
+      </div>`;
+  }
+  if(!s.total){
+    return `<div class="lbl">총 쪽수를 먼저 입력해 주세요</div>
+      <div class="row"><input type="number" inputmode="numeric" placeholder="예: 320" id="tot-${b.id}"><button class="btn sm" onclick="setTotal('${b.id}')">저장</button></div>`;
+  }
+  return `<div class="row between" style="margin-top:8px"><span class="sub">p.${s.cur} / ${s.total}</span><span class="sub">${pct(b)}%</span></div>
+    <div class="bar"><i style="width:${pct(b)}%"></i></div>
+    ${compact?'':''}
+    <div class="row" style="margin-top:10px"><input type="number" inputmode="numeric" placeholder="오늘 어디까지 읽었나요? (쪽)" id="pg-${b.id}"><button class="btn sm primary" onclick="setPage('${b.id}')">기록</button></div>`;
+}
+
+function vToday(){
+  const d=new Date(); const t=today(); const st=streak(); const c=counts();
+  const todayLog=S.log[t]; const r=reading();
+  const days=['일','월','화','수','목','금','토'];
+  let week='';
+  for(let i=6;i>=0;i--){ const x=new Date(); x.setDate(x.getDate()-i); const k=ymd(x);
+    week+=`<div><i class="${S.log[k]?'on':''} ${i===0?'today':''}"></i>${days[x.getDay()]}</div>` }
+  const n = nextUp();
+  return `
+  <div class="row between"><div><div class="sub">${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()} (${days[d.getDay()]})</div><h1>오늘의 독서</h1></div>
+    <span class="pill" id="syncpill">${syncLabel()}</span></div>
+  <div class="hero">
+    <div class="row between">
+      <div><div class="sub">연속 독서</div><div class="big">🔥 ${st}일</div></div>
+      ${todayLog
+        ? `<button class="btn" onclick="logSheet()">${todayLog.min?`오늘 ${todayLog.min}분 ✓`:'오늘 ✓ · 시간 기록'}</button>`
+        : `<button class="btn primary" onclick="quickLog()">오늘 ${S.settings.dailyMin}분 읽었어요</button>`}
+    </div>
+    <div class="week">${week}</div>
+    <div class="stats">
+      <div class="stat"><b>${c.done}/${c.n}</b><small>완독</small></div>
+      <div class="stat"><b>${Math.round(totalMin()/60*10)/10}h</b><small>누적 시간</small></div>
+      <div class="stat"><b>${Object.keys(S.log).length}일</b><small>읽은 날</small></div>
+    </div>
+  </div>
+  ${S.settings.examMode?`<div class="banner">📌 시험 모드 · 투운사 공부가 우선이에요. 1단계(심리투자 + 300문)만 진행하고 나머지는 시험 뒤로.</div>`:''}
+  <h2>지금 읽는 책 · 무거운 책 1 + 가벼운 책 1</h2>
+  ${r.length? r.map(b=>{
+    const s=S.books[b.id];
+    return `<div class="card">
+      <div class="row between"><div><div class="title">${esc(b.title)}</div><div class="author">${esc(b.author)}</div></div><span class="pill amber">${ROLE[b.role]}</span></div>
+      ${progressBlock(b)}
+      ${b.unit==='q'?`<div class="tip">💡 오늘 경제기사 하나를 방금 읽은 개념으로 해석해 보기</div>`:''}
+      ${b.unit==='task'?(b.tasks.map((x,i)=>`<label class="check ${s.tasks[i]?'done':''}"><input type="checkbox" ${s.tasks[i]?'checked':''} onchange="toggleTask('${b.id}',${i})"><span>${esc(x)}</span></label>`).join('')):''}
+      <div class="quick"><button class="btn sm ghost" onclick="openBook('${b.id}')">메모·상세</button>
+        <button class="btn sm ghost" onclick="finish('${b.id}')">완독 처리</button></div>
+    </div>`}).join('') : `<div class="empty">읽는 중인 책이 없어요</div>`}
+  ${n?`<h2>다음 차례</h2>
+    <div class="card"><div class="row between"><div><div class="title">${esc(n.title)}</div><div class="author">${esc(n.author)} · ${n.stage}단계</div></div>
+      <button class="btn sm" onclick="startBook('${n.id}')">시작</button></div><div class="tip">${esc(n.tip)}</div></div>`:''}
+  `;
+}
+
+function bookCard(b){
+  const s=S.books[b.id]; const isOpen=open.has(b.id);
+  const statusPill = s.status==='done'?'<span class="pill green">완독</span>':s.status==='reading'?'<span class="pill amber">읽는 중</span>':s.status==='skip'?'<span class="pill">건너뜀</span>':`<span class="pill">${ROLE[b.role]}</span>`;
+  const noteLabels = b.note==='rules' ? ['내 매매 규칙에 추가할 것 ①','②','③'] : ['실천할 것 1개'];
+  return `<div class="card ${isOpen?'open':''}" id="card-${b.id}">
+    <div class="bookhead" onclick="toggleOpen('${b.id}')">
+      <div class="l"><div class="title" style="${s.status==='done'?'color:var(--dim)':''}">${esc(b.title)}</div><div class="author">${esc(b.author)}</div></div>
+      <div style="text-align:right">${statusPill}<div class="sub" style="margin-top:4px">${pct(b)}%</div></div>
+    </div>
+    <div class="bar ${s.status==='done'?'green':''}"><i style="width:${pct(b)}%"></i></div>
+    <div class="detail">
+      <div class="tip" style="margin-top:0">💡 ${esc(b.tip)}</div>
+      <div class="lbl">상태</div>
+      <div class="seg">${Object.entries(STATUS).map(([k,v])=>`<button class="${s.status===k?'on':''}" onclick="setStatus('${b.id}','${k}')">${v}</button>`).join('')}</div>
+      ${b.unit!=='task'?`<div class="lbl">진도</div>${progressBlock(b,true)}
+        ${b.unit==='page'&&s.total?`<div class="row" style="margin-top:6px"><span class="sub" style="flex:1">총 ${s.total}쪽</span><button class="btn sm ghost" onclick="S.books['${b.id}'].total=null;save()">쪽수 수정</button></div>`:''}`:''}
+      ${b.tasks?`<div class="lbl">${b.unit==='task'?'읽을 부분':'먼저 읽을 장'}</div>${b.tasks.map((x,i)=>`<label class="check ${s.tasks[i]?'done':''}"><input type="checkbox" ${s.tasks[i]?'checked':''} onchange="toggleTask('${b.id}',${i})"><span>${esc(x)}</span></label>`).join('')}`:''}
+      <div class="lbl">${b.note==='rules'?'다 읽으면 → 내 매매 규칙에 추가할 것 3개':'다 읽으면 → 실천할 것 1개'}</div>
+      ${noteLabels.map((l,i)=>`<textarea placeholder="${l}" onchange="setNote('${b.id}',${i},this.value)">${esc(s.notes[i]||'')}</textarea>`).join('<div style="height:6px"></div>')}
+      ${s.startedAt?`<div class="sub" style="margin-top:10px">시작 ${s.startedAt}${s.doneAt?' · 완독 '+s.doneAt:''}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function vShelf(){
+  const c=counts();
+  return `<h1>책장</h1><div class="sub">완독 ${c.done}/${c.n}권 · 순서대로 읽어나가요</div>
+  ${STAGES.map(st=>{
+    const bs=BOOKS.filter(b=>b.stage===st.n);
+    const locked = S.settings.examMode && st.n>1;
+    return `<div class="stage-h"><i class="dot" style="background:${st.color}"></i><b>${st.n}단계 · ${st.name}</b><span>${st.desc}${locked?' · 시험 뒤':''}</span></div>
+      <div style="${locked?'opacity:.55':''}">${bs.map(bookCard).join('')}</div>`;
+  }).join('')}`;
+}
+
+function notesMarkdown(){
+  const out=['# 독서 메모 — 내 매매 규칙 & 실천','', `_${today()} 내보냄_`,''];
+  BOOKS.forEach(b=>{
+    const ns=S.books[b.id].notes.filter(x=>x&&x.trim());
+    if(!ns.length) return;
+    out.push(`## ${b.title} — ${b.author}`);
+    out.push(b.note==='rules'?'**매매 규칙에 추가할 것**':'**실천할 것**');
+    ns.forEach(x=>out.push(`- [ ] ${x.trim()}`));
+    out.push('');
+  });
+  return out.join('\n');
+}
+function vNotes(){
+  const rules=[], acts=[];
+  BOOKS.forEach(b=>S.books[b.id].notes.forEach(x=>{ if(x&&x.trim()) (b.note==='rules'?rules:acts).push({b,x}) }));
+  const item = ({b,x}) => `<div class="note-item">${esc(x)}<div class="author">${esc(b.short)}</div></div>`;
+  return `<h1>메모</h1><div class="sub">읽은 게 실제 매매 시스템에 들어가도록</div>
+    <h2>내 매매 규칙 후보 (${rules.length})</h2>
+    <div class="card">${rules.length?rules.map(item).join(''):'<div class="empty">투자서를 다 읽으면 책마다 3개씩 적어요</div>'}</div>
+    <h2>실천할 것 (${acts.length})</h2>
+    <div class="card">${acts.length?acts.map(item).join(''):'<div class="empty">자기계발서는 실천할 것 1개만</div>'}</div>
+    <button class="btn block primary" onclick="copy(notesMarkdown())">Obsidian용 마크다운 복사</button>`;
+}
+
+function vSettings(){
+  const sy=S.settings.sync;
+  const raw = sy.owner&&sy.repo ? `https://raw.githubusercontent.com/${sy.owner}/${sy.repo}/${sy.branch||'data'}/widget.txt` : '';
+  return `<h1>설정</h1>
+  <h2>읽기 목표</h2>
+  <div class="card">
+    <label class="check"><input type="checkbox" ${S.settings.examMode?'checked':''} onchange="S.settings.examMode=this.checked;save()"><span><b>시험 모드</b><br><span class="sub">투운사 시험 전까지 1단계만 진행</span></span></label>
+    <div class="lbl">하루 목표 시간(분)</div><input type="number" inputmode="numeric" value="${S.settings.dailyMin}" onchange="S.settings.dailyMin=Math.max(5,+this.value||30);save()">
+    <div class="lbl">300문 300답 하루 문항 수</div><input type="number" inputmode="numeric" value="${S.settings.qPerDay}" onchange="S.settings.qPerDay=Math.max(1,+this.value||10);save()">
+  </div>
+
+  <h2>홈 화면 위젯 (KWGT)</h2>
+  <div class="card">
+    <div class="sub" style="margin-bottom:8px">위젯에 이렇게 보여요</div>
+    <div class="widgetprev">${esc(widgetText())}</div>
+    <div class="lbl">GitHub 동기화 — 진도를 <code>${esc(sy.branch||'data')}</code> 브랜치에 올리면 위젯이 읽어가요</div>
+    <div class="row"><input type="text" placeholder="owner" value="${esc(sy.owner)}" onchange="S.settings.sync.owner=this.value.trim();save()"><input type="text" placeholder="repo" value="${esc(sy.repo)}" onchange="S.settings.sync.repo=this.value.trim();save()"></div>
+    <div class="lbl">Fine-grained 토큰 (이 저장소만 · Contents 읽기/쓰기)</div>
+    <input type="password" placeholder="github_pat_…" value="${esc(sy.token)}" onchange="S.settings.sync.token=this.value.trim();save()">
+    <div class="sub" style="margin-top:6px">토큰은 이 폰에만 저장돼요. 공개 저장소라 올린 파일은 누구나 볼 수 있어요.</div>
+    <label class="check"><input type="checkbox" ${sy.backup?'checked':''} onchange="S.settings.sync.backup=this.checked;save()"><span>메모 포함 전체 백업도 올리기 <span class="sub">(다른 기기에서 불러오기용 · 공개됨)</span></span></label>
+    <div class="quick"><button class="btn sm primary" onclick="syncNow(true)">지금 동기화</button>
+      <button class="btn sm" onclick="pullSheet()">GitHub에서 불러오기</button></div>
+    <div class="sub" style="margin-top:8px"><span class="syncdot ${syncState.cls}"></span>${esc(syncState.msg)}</div>
+    ${raw?`<div class="lbl">KWGT 텍스트 수식</div><div class="mono">$wg("${raw}", raw)$</div><div class="sub" style="margin-top:4px">줄바꿈이 안 보이면 raw 대신 txt로 바꿔보세요</div>
+      <button class="btn sm" style="margin-top:6px" onclick="copy('$wg(&quot;${raw}&quot;, raw)$')">수식 복사</button>`:''}
+  </div>
+
+  <h2>백업</h2>
+  <div class="card">
+    <div class="quick" style="margin-top:0"><button class="btn sm" onclick="copy(exportJSON())">JSON 복사</button>
+      <button class="btn sm" onclick="importSheet()">JSON 붙여넣기 복원</button>
+      <button class="btn sm ghost" style="color:var(--red)" onclick="resetSheet()">초기화</button></div>
+  </div>
+  <div class="sub" style="text-align:center;margin-top:16px">설치: 삼성 인터넷/크롬 메뉴 → 홈 화면에 추가</div>`;
+}
+
+/* ---------- actions ---------- */
+function toggleOpen(id){ open.has(id)?open.delete(id):open.add(id); const el=$('#card-'+id); if(el) el.classList.toggle('open') }
+function openBook(id){ open.add(id); location.hash='shelf'; setTimeout(()=>{const el=$('#card-'+id); el&&el.scrollIntoView({behavior:'smooth',block:'start'})},60) }
+function setStatus(id,st){
+  const s=S.books[id]; s.status=st;
+  if(st==='reading'&&!s.startedAt) s.startedAt=today();
+  if(st==='done'){ s.doneAt=today(); toast(`🎉 ${B(id).short} 완독! 메모 3개 남겨볼까요?`) }
+  save();
+}
+function startBook(id){ setStatus(id,'reading'); toast(`${B(id).short} 시작`) }
+function finish(id){
+  const b=B(id);
+  sheet(`<div class="title">${esc(b.title)} 완독 처리할까요?</div>
+    <div class="tip">완독 후 ${b.note==='rules'?'내 매매 규칙에 추가할 것 3개':'실천할 것 1개'}를 적어두면 메모 탭에 모여요.</div>
+    <div class="quick"><button class="btn primary" onclick="closeSheet();S.books['${id}'].cur=S.books['${id}'].total||S.books['${id}'].cur;setStatus('${id}','done');openBook('${id}')">완독 + 메모 쓰기</button>
+    <button class="btn ghost" onclick="closeSheet()">취소</button></div>`);
+}
+function setTotal(id){ const v=+$('#tot-'+id).value; if(v>0){ S.books[id].total=v; save(); } }
+function setPage(id){
+  const el=$('#pg-'+id); const v=+el.value; const s=S.books[id];
+  if(!(v>=0)) return;
+  const delta=v-s.cur; s.cur=Math.min(v, s.total||v);
+  if(delta>0 && !S.log[today()]) S.log[today()]={min:0};
+  if(s.total && s.cur>=s.total){ save(); finish(id); return }
+  save(); toast(delta>0?`+${delta}쪽 기록`:'수정했어요');
+}
+function addQ(id,n){
+  const s=S.books[id]; const b=B(id);
+  s.cur=Math.max(0,Math.min(b.total,s.cur+n));
+  if(n>0 && !S.log[today()]) S.log[today()]={min:0};
+  if(s.cur>=b.total){ save(); finish(id); return }
+  save(); if(n>0) toast(`Q${s.cur}까지`);
+}
+function toggleTask(id,i){ const s=S.books[id]; s.tasks[i]=!s.tasks[i]; save() }
+function setNote(id,i,v){ S.books[id].notes[i]=v; save(true) }
+function quickLog(){ markRead(S.settings.dailyMin); save(); toast(`🔥 ${streak()}일 연속!`) }
+function logSheet(){
+  const l=S.log[today()]||{min:0};
+  sheet(`<div class="title">오늘 읽은 시간</div><div class="lbl">분</div>
+    <input type="number" inputmode="numeric" id="minIn" value="${l.min||0}">
+    <div class="quick"><button class="btn primary" onclick="S.log[today()]={min:+$('#minIn').value||0};closeSheet();save()">저장</button>
+    <button class="btn" style="color:var(--red)" onclick="delete S.log[today()];closeSheet();save()">오늘 기록 지우기</button>
+    <button class="btn ghost" onclick="closeSheet()">닫기</button></div>`);
+}
+function exportJSON(){ const c=JSON.parse(JSON.stringify(S)); c.settings.sync.token=''; return JSON.stringify(c,null,1) }
+function importSheet(){
+  sheet(`<div class="title">백업 JSON 붙여넣기</div><textarea id="impIn" style="height:180px;margin-top:10px"></textarea>
+    <div class="quick"><button class="btn primary" onclick="doImport($('#impIn').value)">복원</button><button class="btn ghost" onclick="closeSheet()">취소</button></div>`);
+}
+function doImport(txt, keepToken=true){
+  try{ const x=JSON.parse(txt); if(!x.books) throw 0;
+    const tok=S.settings.sync.token; S=x; if(keepToken) S.settings.sync.token=tok||S.settings.sync.token||'';
+    load2(); closeSheet(); save(); toast('복원했어요') }
+  catch(e){ toast('JSON 형식이 맞지 않아요') }
+}
+function load2(){ const t=S; localStorage.setItem(KEY,JSON.stringify(t)); load(); }
+function resetSheet(){
+  sheet(`<div class="title">모든 기록을 지울까요?</div><div class="tip">되돌릴 수 없어요. 먼저 JSON 복사로 백업해 두세요.</div>
+    <div class="quick"><button class="btn" style="color:var(--red)" onclick="const tok=S.settings.sync.token;S=defaultState();S.settings.sync.token=tok;closeSheet();save()">초기화</button><button class="btn ghost" onclick="closeSheet()">취소</button></div>`);
+}
+
+/* ---------- GitHub sync ---------- */
+let syncState={cls:'',msg:'동기화 꺼짐 (토큰 없음)'}; let syncTimer=null;
+function syncLabel(){ const sy=S.settings.sync; if(!sy.token) return '로컬 저장'; return `<span class="syncdot ${syncState.cls}"></span>${syncState.cls==='ok'?'위젯 연동됨':syncState.cls==='err'?'동기화 오류':'동기화 중'}` }
+function setSync(cls,msg){ syncState={cls,msg}; const p=$('#syncpill'); if(p) p.innerHTML=syncLabel() }
+function scheduleSync(){ if(!S.settings.sync.token) return; clearTimeout(syncTimer); setSync('busy','변경 사항 올리는 중…'); syncTimer=setTimeout(()=>syncNow(false),3000) }
+const b64e = s => btoa(unescape(encodeURIComponent(s)));
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
+async function gh(path, opt={}){
+  const sy=S.settings.sync;
+  const r = await fetch(`https://api.github.com/repos/${sy.owner}/${sy.repo}${path}`, {...opt,
+    headers:{'Authorization':`Bearer ${sy.token}`,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(opt.body?{'Content-Type':'application/json'}:{})}});
+  if(r.status===404) return null;
+  if(!r.ok){ const t=await r.text(); throw new Error(r.status+' '+t.slice(0,120)) }
+  return r.json();
+}
+async function ensureBranch(){
+  const br=S.settings.sync.branch||'data';
+  if(await gh(`/git/ref/heads/${br}`)) return;
+  const repo=await gh(''); if(!repo) throw new Error('저장소를 찾을 수 없어요');
+  const base=await gh(`/git/ref/heads/${repo.default_branch}`);
+  if(!base) throw new Error('저장소가 비어 있어요. README 하나라도 먼저 커밋해 주세요');
+  await gh('/git/refs',{method:'POST',body:JSON.stringify({ref:`refs/heads/${br}`,sha:base.object.sha})});
+}
+async function putFile(path, content){
+  const br=S.settings.sync.branch||'data';
+  const cur=await gh(`/contents/${path}?ref=${br}`);
+  if(cur && cur.content && b64d(cur.content)===content) return false;
+  await gh(`/contents/${path}`,{method:'PUT',body:JSON.stringify({message:`update ${path}`,content:b64e(content),branch:br,...(cur?{sha:cur.sha}:{})})});
+  return true;
+}
+async function syncNow(manual){
+  const sy=S.settings.sync;
+  if(!sy.token||!sy.owner||!sy.repo){ if(manual) toast('owner/repo/토큰을 먼저 입력해 주세요'); return }
+  setSync('busy','올리는 중…');
+  try{
+    await ensureBranch();
+    await putFile('widget.txt', widgetText()+'\n');
+    if(sy.backup) await putFile('state.json', exportJSON());
+    const t=new Date(); setSync('ok',`동기화 완료 ${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`);
+    if(manual) toast('위젯 데이터 올렸어요');
+  }catch(e){
+    const m = String(e.message||e).includes('Failed to fetch') ? '네트워크 차단 (설치된 앱에서 실행해 주세요)' : String(e.message||e);
+    setSync('err',m); if(manual) toast('동기화 실패');
+  }
+  if(view==='settings') render();
+}
+function pullSheet(){
+  sheet(`<div class="title">GitHub의 state.json으로 덮어쓸까요?</div><div class="tip">'전체 백업' 옵션으로 올린 기록이 있어야 해요. 이 기기 기록은 대체돼요.</div>
+    <div class="quick"><button class="btn primary" onclick="pullNow()">불러오기</button><button class="btn ghost" onclick="closeSheet()">취소</button></div>`);
+}
+async function pullNow(){
+  try{ const f=await gh(`/contents/state.json?ref=${S.settings.sync.branch||'data'}`);
+    if(!f){ toast('state.json이 없어요'); return } doImport(b64d(f.content)) }
+  catch(e){ toast('불러오기 실패'); }
+}
+/* 날짜가 바뀌면 위젯의 '오늘' 줄을 갱신하기 위해 앱을 열 때마다 1회 동기화 */
+function syncOnOpen(){ if(S.settings.sync.token) syncNow(false) }
+
+/* ---------- boot ---------- */
+load(); route(); syncOnOpen();
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ render(); syncOnOpen() } });
+if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(()=>{}) }catch(e){} }
+</script>
+</body>
+</html>
