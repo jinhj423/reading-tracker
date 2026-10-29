@@ -215,6 +215,7 @@ function load(){
 function save(silent){
   S.updatedAt = Date.now();
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
+  pushNative();
   scheduleSync();
   if(!silent) render();
 }
@@ -454,7 +455,12 @@ function vSettings(){
     <div class="sub" style="margin-top:6px">오늘 화면·달력·위젯에 D-day로 표시돼요</div>
   </div>
 
-  <h2>홈 화면 위젯 (KWGT)</h2>
+  <h2>홈 화면 위젯</h2>
+  ${IN_APP?`<div class="card"><div class="title">📱 앱 위젯 연결됨</div><div class="tip" style="margin-top:4px">홈 화면 빈 곳 길게 누르기 → 위젯 → '독서' → 독서 체크리스트를 놓으면 돼요. 아래 GitHub·KWGT 설정은 필요 없어요.</div></div>`
+   :`<div class="card"><div class="title">📱 위젯 앱 설치</div><div class="tip" style="margin-top:4px">안드로이드 앱을 설치하면 토큰·KWGT 없이 홈 화면 위젯(진도·스톱워치)을 쓸 수 있어요.</div>
+     <a class="btn block primary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="https://github.com/jinhj423/reading-tracker/releases/latest/download/reading-tracker.apk">APK 받기</a>
+     <div class="sub" style="margin-top:6px">설치 전 '설정 → JSON 복사'로 지금 기록을 옮겨두세요.</div></div>`}
+  <h2>KWGT 위젯 (선택)</h2>
   <div class="card">
     <div class="sub" style="margin-bottom:8px">위젯에 이렇게 보여요</div>
     <div class="widgetprev">${esc(widgetText())}</div>
@@ -720,8 +726,27 @@ async function pullNow(){
 /* 날짜가 바뀌면 위젯의 '오늘' 줄을 갱신하기 위해 앱을 열 때마다 1회 동기화 */
 function syncOnOpen(){ if(S.settings.sync.token) syncNow(false) }
 
+/* ---------- 안드로이드 앱 위젯 브리지 ---------- */
+const IN_APP = !!window.AndroidWidget;
+function pushNative(){
+  if(!window.AndroidWidget) return;
+  try{
+    const lines=widgetText().split('\n');
+    AndroidWidget.update(JSON.stringify({
+      day: today(), header: lines[0], headerStale: '🔥 오늘 아직 안 읽었어요',
+      body: lines.slice(1).join('\n'), timerStart: S.timer? S.timer.start : 0,
+      todayMin: (S.log[today()]||{}).min||0
+    }));
+  }catch(e){}
+}
+// 위젯 버튼에서 호출: start / stop / '' (앱 복귀 시 갱신)
+window.nativeAction = function(a){
+  if(a==='start'||a==='stop'){ if(location.hash!=='#today') location.hash='today'; }
+  if(a==='start') startTimer(); else if(a==='stop') stopTimer(); else { render(); pushNative(); }
+};
+
 /* ---------- boot ---------- */
-load(); route(); syncOnOpen();
+load(); route(); syncOnOpen(); pushNative();
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ render(); syncOnOpen() } });
 if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(()=>{}) }catch(e){} }
 </script>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">독서</string>
+    <string name="widget_name">독서 체크리스트</string>
+    <string name="widget_desc">진도, 연속 독서일, 스톱워치 시작·종료</string>
+</resources>

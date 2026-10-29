@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+def runNumber = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+
+android {
+    namespace 'com.jinhj.reading'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.jinhj.reading'
+        minSdk 26
+        targetSdk 34
+        versionCode runNumber
+        versionName "1.0.${runNumber}"
+    }
+
+    // 서명: 저장소 Secrets(SIGNING_KEYSTORE_B64 등)가 있으면 고정 키, 없으면 빌드 서버의 디버그 키
+    def ksPath = System.getenv('SIGNING_KEYSTORE_PATH')
+    signingConfigs {
+        if (ksPath) {
+            fixed {
+                storeFile file(ksPath)
+                storePassword System.getenv('SIGNING_STORE_PASSWORD')
+                keyAlias System.getenv('SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('SIGNING_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ksPath ? signingConfigs.fixed : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
