@@ -18,7 +18,16 @@
 4. 1~2분 뒤 `https://jinhj423.github.io/reading-tracker/` 를 **삼성 인터넷 또는 크롬**으로 열기
 5. 메뉴 → **홈 화면에 추가 / 앱 설치**
 
-## 2. 위젯 연동 (선택)
+## 2. 홈 화면 위젯 — 안드로이드 앱 (권장)
+1. 폰에서 https://github.com/jinhj423/reading-tracker/releases/latest/download/reading-tracker.apk 받기
+2. 설치 (처음이면 '출처를 알 수 없는 앱 설치' 허용)
+3. 홈 화면 빈 곳 길게 누르기 → 위젯 → **독서** → 독서 체크리스트 위젯 놓기
+- 위젯: 연속일·진도 요약, ▶ 시작 / ■ 종료(실시간 스톱워치), 누르면 앱 열림
+- 앱은 이 사이트를 그대로 띄우므로 웹 쪽 수정은 앱 재설치 없이 반영됨
+- 앱 서명키는 빌드마다 바뀔 수 있음 → 새 APK 설치 시 기존 앱 삭제가 필요할 수 있으니, 그 전에 설정 → JSON 복사로 백업.
+  고정 키를 쓰려면 저장소 Secrets에 `SIGNING_KEYSTORE_B64`, `SIGNING_STORE_PASSWORD`, `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD` 추가
+
+## 3. KWGT 위젯 연동 (선택)
 앱의 진도를 GitHub `data` 브랜치의 `widget.txt`로 올리고, KWGT 위젯이 그 파일을 읽어 홈 화면에 보여줍니다.
 
 1. GitHub → Settings → Developer settings → **Fine-grained tokens** → Generate
