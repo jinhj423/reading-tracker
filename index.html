@@ -97,6 +97,24 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--amber);outline-o
 .syncdot.ok{background:var(--green)} .syncdot.err{background:var(--red)} .syncdot.busy{background:var(--amber)}
 .hide{display:none!important}
 .note-item{border-left:3px solid var(--amber);padding:2px 0 2px 10px;margin:6px 0;font-size:14px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
+.cal-head b{font-size:18px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal .dow{font-size:11px;color:var(--faint);text-align:center;padding-bottom:2px}
+.cal .dow.sun{color:var(--red)} .cal .dow.sat{color:var(--s2)}
+.cal button{aspect-ratio:1;border:0;border-radius:10px;background:var(--card);color:var(--dim);font:inherit;font-size:13px;
+  position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
+.cal button.blank{visibility:hidden}
+.cal button.l1{background:#c7a0e62e;color:var(--text)} .cal button.l2{background:#c7a0e666;color:var(--text)}
+.cal button.l3{background:#c7a0e6aa;color:#1b1024} .cal button.l4{background:var(--amber);color:#1b1024;font-weight:700}
+.cal button.today{outline:1.5px solid var(--text);outline-offset:-1.5px}
+.cal button.future{opacity:.45}
+.cal button small{font-size:9px;line-height:1;opacity:.85}
+.cal button.exam{outline:2px solid var(--red);outline-offset:-2px}
+.cal button.exam::after{content:'시험';position:absolute;top:2px;right:3px;font-size:8px;color:var(--red);font-weight:700}
+.legend{display:flex;gap:4px;align-items:center;justify-content:flex-end;font-size:11px;color:var(--faint);margin-top:8px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.dday{font-weight:800;color:var(--red)}
 .empty{color:var(--faint);font-size:13px;text-align:center;padding:18px 0}
 a.link{color:var(--amber)}
 </style>
@@ -107,6 +125,7 @@ a.link{color:var(--amber)}
 <nav class="nav"><div class="in">
   <a href="#today" data-v="today"><span class="ic">📖</span>오늘</a>
   <a href="#shelf" data-v="shelf"><span class="ic">📚</span>책장</a>
+  <a href="#cal" data-v="cal"><span class="ic">📅</span>달력</a>
   <a href="#notes" data-v="notes"><span class="ic">📝</span>메모</a>
   <a href="#settings" data-v="settings"><span class="ic">⚙️</span>설정</a>
 </div></nav>
@@ -169,7 +188,7 @@ function defaultState(){
   BOOKS.forEach(b=>books[b.id]={status:'todo',cur:0,total:b.total||null,tasks:{},notes:['','',''],startedAt:null,doneAt:null});
   books.douglas.status='reading'; books.q300.status='reading';
   books.douglas.startedAt = books.q300.startedAt = today();
-  return {v:1, books, log:{}, settings:{examMode:true, dailyMin:30, qPerDay:10,
+  return {v:1, books, log:{}, settings:{examMode:true, examDate:'', dailyMin:30, qPerDay:10,
     sync:{owner:'jinhj423',repo:'reading-tracker',branch:'data',token:'',backup:false}}, updatedAt:Date.now()};
 }
 let S;
@@ -211,6 +230,16 @@ function counts(){
   return {done:active.filter(b=>S.books[b.id].status==='done').length, n:active.length};
 }
 function totalMin(){ return Object.values(S.log).reduce((a,l)=>a+(l.min||0),0) }
+function addItem(id,n){
+  const t=today(); const l=S.log[t]||{min:0}; l.items=l.items||{};
+  l.items[id]=Math.max(0,(l.items[id]||0)+n); if(!l.items[id]) delete l.items[id]; S.log[t]=l;
+}
+function dday(){
+  const e=S.settings.examDate; if(!e) return null;
+  const a=new Date(today()+'T00:00:00'), b=new Date(e+'T00:00:00');
+  return Math.round((b-a)/86400000);
+}
+const ddayTxt = n => n===null?'':n>0?`D-${n}`:n===0?'D-DAY':`D+${-n}`;
 function markRead(min){
   const t=today(); const l=S.log[t]||{min:0};
   l.min = (l.min||0) + (min||0); S.log[t]=l;
@@ -222,7 +251,7 @@ function widgetText(){
   const lines=[];
   const days=Object.keys(S.log).sort(); const last=days[days.length-1];
   const lastTxt = last ? (last===today()?'오늘 ✓':`마지막 ${+last.slice(5,7)}/${+last.slice(8,10)}`) : '기록 없음';
-  lines.push(`🔥 ${streak()}일 연속 · ${lastTxt}`);
+  const dd=dday(); lines.push(`🔥 ${streak()}일 연속 · ${lastTxt}${dd!==null&&dd>=0?' · 투운사 '+ddayTxt(dd):''}`);
   const r = reading();
   r.slice(0,3).forEach(b=>{
     const s=S.books[b.id];
@@ -259,7 +288,7 @@ const open = new Set();
 let view = 'today';
 function route(){
   const h = (location.hash||'').slice(1);
-  view = ['today','shelf','notes','settings'].includes(h)? h : 'today';
+  view = ['today','shelf','cal','notes','settings'].includes(h)? h : 'today';
   render();
 }
 window.addEventListener('hashchange', route);
@@ -267,7 +296,7 @@ window.addEventListener('hashchange', route);
 function render(){
   document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===view));
   const app=$('#app');
-  app.innerHTML = ({today:vToday, shelf:vShelf, notes:vNotes, settings:vSettings})[view]();
+  app.innerHTML = ({today:vToday, shelf:vShelf, cal:vCal, notes:vNotes, settings:vSettings})[view]();
 }
 
 function progressBlock(b, compact){
@@ -302,7 +331,7 @@ function vToday(){
   const n = nextUp();
   return `
   <div class="row between"><div><div class="sub">${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()} (${days[d.getDay()]})</div><h1>오늘의 독서</h1></div>
-    <span class="pill" id="syncpill">${syncLabel()}</span></div>
+    <div style="text-align:right">${dday()!==null?`<div class="dday" style="font-size:15px">투운사 ${ddayTxt(dday())}</div>`:''}<span class="pill" id="syncpill">${syncLabel()}</span></div></div>
   <div class="hero">
     <div class="row between">
       <div><div class="sub">연속 독서</div><div class="big">🔥 ${st}일</div></div>
@@ -405,6 +434,12 @@ function vSettings(){
     <div class="lbl">300문 300답 하루 문항 수</div><input type="number" inputmode="numeric" value="${S.settings.qPerDay}" onchange="S.settings.qPerDay=Math.max(1,+this.value||10);save()">
   </div>
 
+  <h2>투자자산운용사 시험일</h2>
+  <div class="card">
+    <input type="date" value="${esc(S.settings.examDate)}" onchange="S.settings.examDate=this.value;save()">
+    <div class="sub" style="margin-top:6px">오늘 화면·달력·위젯에 D-day로 표시돼요</div>
+  </div>
+
   <h2>홈 화면 위젯 (KWGT)</h2>
   <div class="card">
     <div class="sub" style="margin-bottom:8px">위젯에 이렇게 보여요</div>
@@ -431,6 +466,59 @@ function vSettings(){
   <div class="sub" style="text-align:center;margin-top:16px">설치: 삼성 인터넷/크롬 메뉴 → 홈 화면에 추가</div>`;
 }
 
+/* ---------- calendar ---------- */
+let calY=new Date().getFullYear(), calM=new Date().getMonth();
+function level(l){ if(!l) return 0; const m=l.min||0; if(m>=60) return 4; if(m>=30) return 3; if(m>=15) return 2; return 1; }
+function itemsTxt(items){
+  return Object.entries(items||{}).map(([id,n])=>{ const b=B(id); if(!b) return ''; return `${b.short} ${b.unit==='q'?'+'+n+'문항':'+'+n+'쪽'}` }).filter(Boolean);
+}
+function calMove(d){ calM+=d; if(calM<0){calM=11;calY--} if(calM>11){calM=0;calY++} render() }
+function vCal(){
+  const first=new Date(calY,calM,1), lastDay=new Date(calY,calM+1,0).getDate(), t=today();
+  const z=n=>String(n).padStart(2,'0');
+  let cells=['일','월','화','수','목','금','토'].map((x,i)=>`<div class="dow ${i===0?'sun':i===6?'sat':''}">${x}</div>`).join('');
+  for(let i=0;i<first.getDay();i++) cells+='<button class="blank" tabindex="-1"></button>';
+  let mDays=0, mMin=0, mPages=0, mQ=0, best=0, run=0;
+  for(let d=1; d<=lastDay; d++){
+    const k=`${calY}-${z(calM+1)}-${z(d)}`, l=S.log[k], lv=level(l);
+    if(l){ mDays++; mMin+=l.min||0; Object.entries(l.items||{}).forEach(([id,n])=>{ const b=B(id); if(b&&b.unit==='q') mQ+=n; else mPages+=n }); run++; best=Math.max(best,run) } else if(k<=t) run=0;
+    const cls=[lv?'l'+lv:'', k===t?'today':'', k>t?'future':'', k===S.settings.examDate?'exam':''].join(' ');
+    const sub = l ? (l.min? l.min+'분' : '✓') : '';
+    cells+=`<button class="${cls}" onclick="daySheet('${k}')">${d}${sub?`<small>${sub}</small>`:''}</button>`;
+  }
+  const dd=dday();
+  return `<h1>달력</h1><div class="sub">날짜를 누르면 그날 기록을 보거나 채울 수 있어요</div>
+  <div class="card" style="margin-top:14px">
+    <div class="cal-head"><button class="btn sm ghost" onclick="calMove(-1)">‹</button><b>${calY}년 ${calM+1}월</b><button class="btn sm ghost" onclick="calMove(1)">›</button></div>
+    <div class="cal">${cells}</div>
+    <div class="legend">적게 <i style="background:var(--card)"></i><i style="background:#c7a0e62e"></i><i style="background:#c7a0e666"></i><i style="background:#c7a0e6aa"></i><i style="background:var(--amber)"></i> 60분+</div>
+  </div>
+  <div class="stats" style="margin-top:4px">
+    <div class="stat"><b>${mDays}일</b><small>읽은 날</small></div>
+    <div class="stat"><b>${Math.round(mMin/6)/10}h</b><small>독서 시간</small></div>
+    <div class="stat"><b>${best}일</b><small>최장 연속</small></div>
+  </div>
+  <div class="stats" style="grid-template-columns:repeat(2,1fr)">
+    <div class="stat"><b>${mPages}쪽</b><small>읽은 쪽수</small></div>
+    <div class="stat"><b>${mQ}문항</b><small>300문 300답</small></div>
+  </div>
+  ${dd!==null?`<div class="banner" style="margin-top:12px">📌 투운사 시험 <b>${S.settings.examDate}</b> · <span class="dday">${ddayTxt(dd)}</span></div>`
+    :`<div class="banner" style="margin-top:12px">📌 설정에서 투운사 시험일을 넣으면 달력에 표시돼요</div>`}`;
+}
+function daySheet(k){
+  const l=S.log[k]; const its=itemsTxt(l&&l.items); const future=k>today();
+  const [y,m,d]=k.split('-').map(Number);
+  sheet(`<div class="title">${y}년 ${m}월 ${d}일${k===S.settings.examDate?' · <span class="dday">시험일</span>':''}</div>
+    ${its.length?`<div class="tip">${its.map(esc).join(' · ')}</div>`:`<div class="tip">${l?'시간만 기록된 날':'기록 없음'}</div>`}
+    ${future?'':`<div class="lbl">읽은 시간(분) — 기록을 깜빡한 날도 여기서 채울 수 있어요</div>
+    <input type="number" inputmode="numeric" id="dayMin" value="${l?l.min||0:S.settings.dailyMin}">
+    <div class="quick"><button class="btn primary" onclick="saveDay('${k}')">저장</button>
+    ${l?`<button class="btn" style="color:var(--red)" onclick="delete S.log['${k}'];closeSheet();save()">기록 지우기</button>`:''}
+    <button class="btn ghost" onclick="closeSheet()">닫기</button></div>`}
+    ${future?`<div class="quick"><button class="btn ghost" onclick="closeSheet()">닫기</button></div>`:''}`);
+}
+function saveDay(k){ const l=S.log[k]||{min:0}; l.min=Math.max(0,+$('#dayMin').value||0); S.log[k]=l; closeSheet(); save(); toast('저장했어요') }
+
 /* ---------- actions ---------- */
 function toggleOpen(id){ open.has(id)?open.delete(id):open.add(id); const el=$('#card-'+id); if(el) el.classList.toggle('open') }
 function openBook(id){ open.add(id); location.hash='shelf'; setTimeout(()=>{const el=$('#card-'+id); el&&el.scrollIntoView({behavior:'smooth',block:'start'})},60) }
@@ -453,14 +541,14 @@ function setPage(id){
   const el=$('#pg-'+id); const v=+el.value; const s=S.books[id];
   if(!(v>=0)) return;
   const delta=v-s.cur; s.cur=Math.min(v, s.total||v);
-  if(delta>0 && !S.log[today()]) S.log[today()]={min:0};
+  if(delta!==0) addItem(id, delta);
   if(s.total && s.cur>=s.total){ save(); finish(id); return }
   save(); toast(delta>0?`+${delta}쪽 기록`:'수정했어요');
 }
 function addQ(id,n){
   const s=S.books[id]; const b=B(id);
-  s.cur=Math.max(0,Math.min(b.total,s.cur+n));
-  if(n>0 && !S.log[today()]) S.log[today()]={min:0};
+  const before=s.cur; s.cur=Math.max(0,Math.min(b.total,s.cur+n));
+  if(s.cur!==before) addItem(id, s.cur-before);
   if(s.cur>=b.total){ save(); finish(id); return }
   save(); if(n>0) toast(`Q${s.cur}까지`);
 }
@@ -471,7 +559,7 @@ function logSheet(){
   const l=S.log[today()]||{min:0};
   sheet(`<div class="title">오늘 읽은 시간</div><div class="lbl">분</div>
     <input type="number" inputmode="numeric" id="minIn" value="${l.min||0}">
-    <div class="quick"><button class="btn primary" onclick="S.log[today()]={min:+$('#minIn').value||0};closeSheet();save()">저장</button>
+    <div class="quick"><button class="btn primary" onclick="S.log[today()]={...(S.log[today()]||{}),min:+$('#minIn').value||0};closeSheet();save()">저장</button>
     <button class="btn" style="color:var(--red)" onclick="delete S.log[today()];closeSheet();save()">오늘 기록 지우기</button>
     <button class="btn ghost" onclick="closeSheet()">닫기</button></div>`);
 }
