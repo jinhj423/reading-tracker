@@ -111,6 +111,16 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--amber);outline-o
 .sess .t{color:var(--dim);font-size:12.5px}
 .del{border:0;background:transparent;color:var(--faint);font-size:17px;padding:4px 8px;cursor:pointer}
 .del:active{color:var(--red)}
+.celebrate{text-align:center;padding:10px 0 4px}
+.celebrate .fl{font-size:72px;line-height:1;display:inline-block;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.celebrate .n{font-size:44px;font-weight:900;color:#ffb020;letter-spacing:-.03em;margin-top:4px}
+.celebrate .dots{display:flex;gap:6px;justify-content:center;margin:14px 0 6px}
+.celebrate .dots span{width:30px;text-align:center;font-size:10px;color:var(--faint)}
+.celebrate .dots i{display:block;width:26px;height:26px;margin:0 auto 3px;border-radius:50%;background:var(--card2);line-height:26px;font-style:normal;font-size:13px}
+.celebrate .dots i.on{background:#ff9600;color:#fff}
+@keyframes pop{0%{transform:scale(.2) rotate(-20deg);opacity:0}100%{transform:scale(1);opacity:1}}
+.ask{display:flex;align-items:center;gap:10px;background:#ff96001a;border:1px solid #ff960055;border-radius:12px;padding:10px 12px;margin-top:12px;font-size:14px}
+.ask b{color:#ffb020}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px}
 .cal-head b{font-size:18px}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
@@ -212,8 +222,12 @@ function load(){
   // 새 책이 추가된 경우 보정
   BOOKS.forEach(b=>{ if(!S.books[b.id]) S.books[b.id]={status:'todo',cur:0,total:b.total||null,tasks:{},notes:['','',''],startedAt:null,doneAt:null} });
 }
+let _doneToday = null;
 function save(silent){
   S.updatedAt = Date.now();
+  const doneNow = !!S.log[today()];
+  if(_doneToday===false && doneNow) setTimeout(celebrate, 60);   // 오늘 첫 기록 → 듀오링고식 축하
+  _doneToday = doneNow;
   try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){}
   pushNative();
   scheduleSync();
@@ -234,6 +248,16 @@ function streak(){
   if(!S.log[ymd(d)]) d.setDate(d.getDate()-1);         // 오늘 아직이면 어제부터 셈
   while(S.log[ymd(d)]){ n++; d.setDate(d.getDate()-1) }
   return n;
+}
+function streakAt(day){ let d=new Date(day+'T12:00:00'), n=0; while(S.log[ymd(d)]){ n++; d.setDate(d.getDate()-1) } return n }
+function lastDay(){ const k=Object.keys(S.log).sort(); return k[k.length-1]||'' }
+function celebrate(){
+  const st=streak(); const days=['일','월','화','수','목','금','토']; let dots='';
+  for(let i=6;i>=0;i--){ const x=new Date(); x.setDate(x.getDate()-i); dots+=`<span><i class="${S.log[ymd(x)]?'on':''}">${S.log[ymd(x)]?'✓':''}</i>${days[x.getDay()]}</span>` }
+  const msg = st===1?'오늘부터 다시 시작!': st%7===0?`${st/7}주 연속 달성! 대단해요`: st>=3?'불꽃이 이어지고 있어요':'좋아요, 내일도 이어가요';
+  sheet(`<div class="celebrate"><div class="fl">🔥</div><div class="n">${st}일 연속</div><div class="sub">${msg}</div>
+    <div class="dots">${dots}</div></div>
+    <button class="btn block primary" style="margin-top:10px" onclick="closeSheet()">계속</button>`);
 }
 function reading(){ return BOOKS.filter(b=>S.books[b.id].status==='reading') }
 function nextUp(){
@@ -352,6 +376,7 @@ function vToday(){
       <div><div class="sub">연속 독서</div><div class="big">🔥 ${st}일</div></div>
       <div style="text-align:right"><div class="sub">오늘</div><div class="big" style="font-size:22px">${todayLog?(todayLog.min||0)+'분':'—'}</div></div>
     </div>
+    ${!todayLog&&!S.timer?`<div class="ask">🔥<div><b>오늘 독서는 했나요?</b><br><span class="sub">${st?`${st}일 연속을 이어가려면 오늘 읽어야 해요`:'오늘 읽으면 1일 연속 시작!'}</span></div></div>`:''}
     ${swHTML()}
     ${todayLog&&(todayLog.sessions||[]).length?`<div style="margin-top:10px">${sessionsHTML(today())}</div>`:''}
     <div class="week">${week}</div>
@@ -456,7 +481,11 @@ function vSettings(){
   </div>
 
   <h2>홈 화면 위젯</h2>
-  ${IN_APP?`<div class="card"><div class="title">📱 앱 위젯 연결됨</div><div class="tip" style="margin-top:4px">홈 화면 빈 곳 길게 누르기 → 위젯 → '독서' → 독서 체크리스트를 놓으면 돼요. 아래 GitHub·KWGT 설정은 필요 없어요.</div></div>`
+  ${IN_APP?`<div class="card"><div class="title">📱 앱 위젯 연결됨</div><div class="tip" style="margin-top:4px">홈 화면 빈 곳 길게 누르기 → 위젯 → '독서'에서 고르세요.<br>· <b>연속 독서 (2×1)</b> 오늘 읽었으면 불꽃 ON, 안 읽었으면 "오늘 독서는 했나요?" — 누르면 바로 스톱워치 시작<br>· <b>독서 체크리스트 (4×2)</b> 진도 요약 + 시작/종료<br>아래 GitHub·KWGT 설정은 필요 없어요.</div>
+      ${window.AndroidWidget.setReminder?`<div class="lbl">안 읽은 날 알림</div>
+      <select onchange="S.settings.remindHour=+this.value;save();setRem();toast(+this.value<0?'알림 껐어요':this.value+'시에 알려드릴게요')">
+        ${[[-1,'끄기'],[19,'저녁 7시'],[20,'저녁 8시'],[21,'밤 9시'],[22,'밤 10시'],[23,'밤 11시']].map(([v,t])=>`<option value="${v}" ${(S.settings.remindHour??21)===v?'selected':''}>${t}</option>`).join('')}
+      </select>`:''}</div>`
    :`<div class="card"><div class="title">📱 위젯 앱 설치</div><div class="tip" style="margin-top:4px">안드로이드 앱을 설치하면 토큰·KWGT 없이 홈 화면 위젯(진도·스톱워치)을 쓸 수 있어요.</div>
      <a class="btn block primary" style="display:block;text-align:center;text-decoration:none;margin-top:10px" href="https://github.com/jinhj423/reading-tracker/releases/latest/download/reading-tracker.apk">APK 받기</a>
      <div class="sub" style="margin-top:6px">설치 전 '설정 → JSON 복사'로 지금 기록을 옮겨두세요.</div></div>`}
@@ -565,10 +594,10 @@ function stopTimer(){
   commitSession(st,end,min);
 }
 function commitSession(st,end,min){
-  const day=ymd(new Date(st)); const l=S.log[day]||{min:0};
+  const day=ymd(new Date(st)); const first=!S.log[today()]; const l=S.log[day]||{min:0};
   l.sessions=l.sessions||[]; l.sessions.push({s:st,e:end,min});
   l.min=(l.min||0)+min; S.log[day]=l; S.timer=null; save();
-  toast(`■ ${l.sessions.length}회차 ${min}분 · 오늘 합계 ${l.min}분`);
+  if(!(first && day===today())) toast(`■ ${l.sessions.length}회차 ${min}분 · 오늘 합계 ${l.min}분`);
 }
 function delSessionAsk(day,i){
   const l=S.log[day]; const x=l&&l.sessions&&l.sessions[i]; if(!x) return;
@@ -642,7 +671,7 @@ function addQ(id,n){
 }
 function toggleTask(id,i){ const s=S.books[id]; s.tasks[i]=!s.tasks[i]; save() }
 function setNote(id,i,v){ S.books[id].notes[i]=v; save(true) }
-function quickLog(){ markRead(S.settings.dailyMin); save(); toast(`🔥 ${streak()}일 연속!`) }
+function quickLog(){ markRead(S.settings.dailyMin); save() }
 function logSheet(){
   const l=S.log[today()]||{min:0};
   sheet(`<div class="title">오늘 총 독서 시간 수정</div><div class="tip">스톱워치를 안 켜고 읽은 날에 써요. 입력한 값이 오늘 합계가 돼요.</div><div class="lbl">분</div>
@@ -735,10 +764,12 @@ function pushNative(){
     AndroidWidget.update(JSON.stringify({
       day: today(), header: lines[0], headerStale: '🔥 오늘 아직 안 읽었어요',
       body: lines.slice(1).join('\n'), timerStart: S.timer? S.timer.start : 0,
-      todayMin: (S.log[today()]||{}).min||0
+      todayMin: (S.log[today()]||{}).min||0,
+      lastDay: lastDay(), streakAtLast: lastDay()? streakAt(lastDay()) : 0
     }));
   }catch(e){}
 }
+function setRem(){ try{ if(window.AndroidWidget && AndroidWidget.setReminder) AndroidWidget.setReminder(S.settings.remindHour ?? 21) }catch(e){} }
 // 위젯 버튼에서 호출: start / stop / '' (앱 복귀 시 갱신)
 window.nativeAction = function(a){
   if(a==='start'||a==='stop'){ if(location.hash!=='#today') location.hash='today'; }
@@ -746,8 +777,8 @@ window.nativeAction = function(a){
 };
 
 /* ---------- boot ---------- */
-load(); route(); syncOnOpen(); pushNative();
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ render(); syncOnOpen() } });
+load(); _doneToday=!!S.log[today()]; route(); syncOnOpen(); pushNative(); setRem();
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ _doneToday=!!S.log[today()]; render(); syncOnOpen() } });
 if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(()=>{}) }catch(e){} }
 </script>
 </body>

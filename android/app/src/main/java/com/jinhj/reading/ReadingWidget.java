@@ -25,9 +25,7 @@ public class ReadingWidget extends AppWidgetProvider {
     }
 
     static void refreshAll(Context c) {
-        AppWidgetManager m = AppWidgetManager.getInstance(c);
-        int[] ids = m.getAppWidgetIds(new ComponentName(c, ReadingWidget.class));
-        for (int id : ids) m.updateAppWidget(id, build(c));
+        WidgetData.refreshAll(c);
     }
 
     private static PendingIntent open(Context c, String action, int code) {

@@ -1,6 +1,9 @@
 package com.jinhj.reading;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -51,6 +54,12 @@ public class MainActivity extends Activity {
         });
         setContentView(web);
 
+        if (Build.VERSION.SDK_INT >= 33 &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
+        ReminderReceiver.schedule(this);
+
         pendingAction = getIntent().getStringExtra("action");
         web.loadUrl(URL + "#today");
     }
@@ -98,7 +107,14 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String version() {
-            return "1";
+            return "2";
+        }
+
+        /** 매일 알림 시간 (0~23시, -1이면 끔) */
+        @JavascriptInterface
+        public void setReminder(int hour) {
+            getSharedPreferences("widget", MODE_PRIVATE).edit().putInt("remindHour", hour).apply();
+            ReminderReceiver.schedule(MainActivity.this);
         }
     }
 }

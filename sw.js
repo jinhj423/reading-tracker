@@ -1,5 +1,5 @@
 // 오프라인 캐시 — 앱 껍데기는 캐시 우선, GitHub API 요청은 건드리지 않음
-const CACHE = 'reading-tracker-v5';
+const CACHE = 'reading-tracker-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
