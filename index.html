@@ -104,6 +104,11 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--amber);outline-o
 .sw .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:6px;animation:blink 1.2s infinite}
 @keyframes blink{50%{opacity:.25}}
 .sw .btn.big{font-size:17px;padding:13px 0;width:100%}
+.sw .btns{display:flex;gap:8px}
+.sw .btns .btn{flex:1}
+.sw.pause{border-color:#ffb02088}
+.sw.pause .clock{color:#ffb020;animation:blink 1.6s infinite}
+.sw .btn.pause{background:var(--card2);border-color:var(--line);color:var(--text);font-weight:700}
 .sw .btn.stop{background:var(--red);border-color:var(--red);color:#1b1024;font-weight:700}
 .sess{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
 .sess:last-child{border-bottom:0}
@@ -221,6 +226,7 @@ function load(){
   if(!S || !S.books) S = defaultState();
   // 새 책이 추가된 경우 보정
   BOOKS.forEach(b=>{ if(!S.books[b.id]) S.books[b.id]={status:'todo',cur:0,total:b.total||null,tasks:{},notes:['','',''],startedAt:null,doneAt:null} });
+  normTimer();
 }
 let _doneToday = null;
 function save(silent){
@@ -298,7 +304,7 @@ function widgetText(){
   // 위젯 텍스트는 앱을 연 시점에만 갱신되므로 '오늘' 대신 마지막 기록 날짜를 보여줌
   const lines=[];
   const days=Object.keys(S.log).sort(); const last=days[days.length-1];
-  const lastTxt = S.timer ? '⏱ 읽는 중' : last ? (last===today()?`오늘 ${S.log[last].min||0}분 ✓`:`마지막 ${+last.slice(5,7)}/${+last.slice(8,10)}`) : '기록 없음';
+  const lastTxt = S.timer ? (S.timer.run?'⏱ 읽는 중':'⏸ 일시정지') : last ? (last===today()?`오늘 ${S.log[last].min||0}분 ✓`:`마지막 ${+last.slice(5,7)}/${+last.slice(8,10)}`) : '기록 없음';
   const dd=dday(); lines.push(`🔥 ${streak()}일 연속 · ${lastTxt}${dd!==null&&dd>=0?' · 투운사 '+ddayTxt(dd):''}`);
   const r = reading();
   r.slice(0,3).forEach(b=>{
@@ -593,19 +599,28 @@ function saveDay(k){ const l=S.log[k]||{min:0}; l.min=Math.max(0,+$('#dayMin').v
 const hm = ts => { const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0') };
 function fmtClock(ms){ const t=Math.max(0,Math.floor(ms/1000)), h=Math.floor(t/3600), m=Math.floor(t%3600/60), x=t%60, z=n=>String(n).padStart(2,'0');
   return h? `${h}:${z(m)}:${z(x)}` : `${z(m)}:${z(x)}` }
+// 타이머: {start: 회차 시작 시각, acc: 정지 전까지 누적 ms, run: 현재 측정 재개 시각(정지 중이면 null)}
+function normTimer(){ if(S.timer && !('acc' in S.timer)) S.timer={start:S.timer.start, acc:0, run:S.timer.start} }
+function tElapsed(){ const t=S.timer; if(!t) return 0; return (t.acc||0) + (t.run? Date.now()-t.run : 0) }
+const isPaused = () => !!(S.timer && !S.timer.run);
+function pauseTimer(){
+  if(!S.timer || !S.timer.run) return;
+  S.timer.acc=(S.timer.acc||0)+Date.now()-S.timer.run; S.timer.run=null; save();
+  toast('⏸ 정지 — 기록은 아직 안 됐어요');
+}
 function startTimer(){
-  if(S.timer) return;
-  S.timer={start:Date.now()}; save();
+  if(S.timer){ if(!S.timer.run){ S.timer.run=Date.now(); save(); toast('▶ 계속'); } return; }
+  const now=Date.now(); S.timer={start:now, acc:0, run:now}; save();
   const n=((S.log[today()]||{}).sessions||[]).length+1;
   toast(`▶ ${n}회차 시작`);
 }
 function stopTimer(){
   if(!S.timer) return;
-  const st=S.timer.start, end=Date.now(), min=Math.round((end-st)/60000);
+  const st=S.timer.start, end=Date.now(), min=Math.round(tElapsed()/60000);
   if(min<1){ S.timer=null; save(); toast('1분 미만이라 기록하지 않았어요'); return }
   if(min>180){   // 종료를 깜빡한 경우
     sheet(`<div class="title">${Math.floor(min/60)}시간 ${min%60}분이 지났어요</div>
-      <div class="tip">${hm(st)}에 시작했어요. 종료를 깜빡했다면 실제로 읽은 시간으로 고쳐주세요.</div>
+      <div class="tip">${hm(st)}에 시작했어요. 기록을 깜빡했다면 실제로 읽은 시간으로 고쳐주세요.</div>
       <div class="lbl">실제 읽은 시간(분)</div><input type="number" inputmode="numeric" id="fixMin" value="${min}">
       <div class="quick"><button class="btn primary" onclick="const m=Math.max(1,+$('#fixMin').value||1);commitSession(${st},${st}+m*60000,m);closeSheet()">기록</button>
       <button class="btn" style="color:var(--red)" onclick="S.timer=null;closeSheet();save();toast('이번 회차는 버렸어요')">버리기</button></div>`);
@@ -643,18 +658,19 @@ function sessionsHTML(day){
     <button class="del" aria-label="삭제" onclick="delSessionAsk('${day}',${i})">🗑</button></div>`).join('');
 }
 function swHTML(){
-  const l=S.log[today()]||{}; const n=(l.sessions||[]).length; const run=!!S.timer;
-  return `<div class="sw ${run?'run':''}">
-    <div class="sub">${run?`<span class="live"></span>${n+1}회차 읽는 중 · ${hm(S.timer.start)} 시작`:(n?`오늘 ${n}회 · 합계 ${l.min||0}분`:`오늘 목표 ${S.settings.dailyMin}분`)}</div>
-    <div class="clock" id="clock">${run?fmtClock(Date.now()-S.timer.start):fmtClock((l.min||0)*60000)}</div>
-    ${run?`<button class="btn big stop" onclick="stopTimer()">■ 종료</button>`
-         :`<button class="btn big primary" onclick="startTimer()">▶ ${n?'이어서 읽기':'독서 시작'}</button>`}
+  const l=S.log[today()]||{}; const n=(l.sessions||[]).length; const on=!!S.timer; const pz=isPaused();
+  return `<div class="sw ${on?(pz?'pause':'run'):''}">
+    <div class="sub">${on?(pz?`⏸ ${n+1}회차 일시정지 · ${hm(S.timer.start)} 시작`:`<span class="live"></span>${n+1}회차 읽는 중 · ${hm(S.timer.start)} 시작`):(n?`오늘 ${n}회 · 합계 ${l.min||0}분`:`오늘 목표 ${S.settings.dailyMin}분`)}</div>
+    <div class="clock" id="clock">${on?fmtClock(tElapsed()):fmtClock((l.min||0)*60000)}</div>
+    ${on?`<div class="btns">${pz?`<button class="btn big primary" onclick="startTimer()">▶ 계속</button>`:`<button class="btn big pause" onclick="pauseTimer()">⏸ 정지</button>`}
+            <button class="btn big stop" onclick="stopTimer()">■ 기록</button></div>`
+        :`<button class="btn big primary" onclick="startTimer()">▶ ${n?'이어서 읽기':'독서 시작'}</button>`}
     <div class="row" style="justify-content:center;gap:4px;margin-top:6px">
       <button class="btn sm ghost" onclick="logSheet()">시간 직접 입력</button>
     </div>
   </div>`;
 }
-setInterval(()=>{ const c=document.getElementById('clock'); if(c && S.timer) c.textContent=fmtClock(Date.now()-S.timer.start) },1000);
+setInterval(()=>{ const c=document.getElementById('clock'); if(c && S.timer && S.timer.run) c.textContent=fmtClock(tElapsed()) },1000);
 
 /* ---------- actions ---------- */
 function toggleOpen(id){ open.has(id)?open.delete(id):open.add(id); const el=$('#card-'+id); if(el) el.classList.toggle('open') }
@@ -784,7 +800,7 @@ function pushNative(){
     const lines=widgetText().split('\n');
     AndroidWidget.update(JSON.stringify({
       day: today(), header: lines[0], headerStale: '🔥 오늘 아직 안 읽었어요',
-      body: lines.slice(1).join('\n'), timerStart: S.timer? S.timer.start : 0,
+      body: lines.slice(1).join('\n'), timerStart: (S.timer && S.timer.run)? Date.now()-tElapsed() : 0,
       todayMin: (S.log[today()]||{}).min||0,
       lastDay: lastDay(), streakAtLast: lastDay()? streakAt(lastDay()) : 0
     }));
